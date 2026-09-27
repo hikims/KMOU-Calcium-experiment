@@ -45,13 +45,14 @@ The public data are not included. Download the two Zenodo records and the Emrich
 
 ```
 <project>/
-  calcium-fpt-code/                                                    (this repository)
-  Fluorescence Intensity Data from HEK293 Ca²⁺ Spike Trains_data/     Zenodo 10.5281/zenodo.15705673 (raw traces, CChCB/*.txt)
-  Analysis of Calcium Spike Trains in HEK293 Cells_data/               Zenodo 10.5281/zenodo.14779474 (processed tables, 2/*.csv)
-  Omnitemporal choreographies ... Ca2+ signaling_data/                 Emrich et al. 2021, Source_Data_Emrich.xlsx
+  calcium-fpt-code/                                                  (this repository)
+  Fluorescence Intensity Data from HEK293 Ca²⁺ Spike Trains_data/   one folder holding both Zenodo records:
+      CChCB/*.txt   raw fluorescence traces      (Zenodo 10.5281/zenodo.15705673)
+      2/*.csv       processed spike tables        (Zenodo 10.5281/zenodo.14779474)
+  Omnitemporal choreographies ... Ca2+ signaling_data/               Emrich et al. 2021, Source_Data_Emrich.xlsx
 ```
 
-The scripts locate the folders by glob (`../../*Spike Trains_data/`, `../../*signaling_data/`), so the folder names may keep the Zenodo titles; see `data_dose_units/README.md` for the exact patterns.
+The scripts locate the folders by glob (`../../*Spike Trains_data/`, `../../*signaling_data/`), so the folder names may keep the Zenodo titles; `round2_checks/check11_gaps_rois.py` and `check12_gap_intervals.py` use the folder name shown above. A sibling `data/` folder holding the same subfolders also works. See `data_dose_units/README.md` for the exact patterns.
 
 ## Running
 
