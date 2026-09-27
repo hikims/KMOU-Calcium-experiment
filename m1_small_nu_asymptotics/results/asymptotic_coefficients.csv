@@ -1,0 +1,10 @@
+moment,order,coefficient
+mean,0,log(z_s/z_x)
+mean,1,-z_s + z_x + log(z_s/z_x)
+mean,2,z_s**2 - 3*z_s - z_x**2 + 3*z_x + log(z_s/z_x)
+var,0,0
+var,1,2*z_s - 2*z_x - 2*log(z_s) + 2*log(z_x)
+var,2,-4*z_s**2 + 14*z_s + 4*z_x**2 - 14*z_x + log(z_x**6/z_s**6)
+kappa3,0,0
+kappa3,1,0
+kappa3,2,6*z_s**2 - 24*z_s - 6*z_x**2 + 24*z_x + 12*log(z_s) - 12*log(z_x)

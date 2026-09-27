@@ -1,0 +1,10 @@
+a = nu^2/2, z_x = 1/(1-H0), z_s = 1/(1-H*)
+mean: a^0 : log(z_s/z_x)
+mean: a^1 : -z_s + z_x + log(z_s/z_x)
+mean: a^2 : z_s**2 - 3*z_s - z_x**2 + 3*z_x + log(z_s/z_x)
+var: a^0 : 0
+var: a^1 : 2*z_s - 2*z_x - 2*log(z_s) + 2*log(z_x)
+var: a^2 : -4*z_s**2 + 14*z_s + 4*z_x**2 - 14*z_x + log(z_x**6/z_s**6)
+kappa3: a^0 : 0
+kappa3: a^1 : 0
+kappa3: a^2 : 6*z_s**2 - 24*z_s - 6*z_x**2 + 24*z_x + 12*log(z_s) - 12*log(z_x)

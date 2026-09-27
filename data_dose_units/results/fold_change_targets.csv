@@ -1,0 +1,11 @@
+kind,lo,hi,ratio,n_lo,n_hi
+between-cell (constant dose),3,5,2.4224408764588636,16,18
+between-cell (constant dose),3,15,2.475409970437321,16,59
+between-cell (constant dose),3,30,6.946293030744451,16,32
+between-cell (constant dose),5,15,1.02186600073224,18,59
+between-cell (constant dose),5,30,2.8674768074829458,18,32
+between-cell (constant dose),15,30,2.8061182243348872,59,32
+within-cell (step),5,10,0.8466632964498093,10,10
+within-cell (step),10,15,1.0844949613580943,12,12
+within-cell (step),5,30,1.790159174838052,4,4
+within-cell (step),5,15,1.0,9,9

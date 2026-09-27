@@ -1,0 +1,8 @@
+set,record,n_rois,n_included,n_in_author_table
+development,CChCB_2024_07_11_E1,32,30,15
+development,CChCB_2024_07_18_E1,34,19,5
+development,CChCB_2024_08_08_E1,23,21,12
+development,CChCB_2024_08_08_E2,17,14,5
+lock,CChCB_2024_08_09_E1,17,15,7
+lock,CChCB_2024_08_09_E2,21,18,9
+lock,CChCB_2024_08_09_E3,26,11,6

@@ -1,0 +1,6 @@
+line,hopf_points,osc_min,osc_max,n_osc,n_coexist,n_multi_fp,hopf_ratio_max
+S_ref_st,,0.001,1000.0,121,0,0,8.7262
+S_ref_prev,,0.001,1000.0,121,0,0,0.0
+epsH_ref_st,79.59,63.0957,10000.0,45,3,0,7.8678
+beta_ref_st,1.748;8.629,1.39003,8.02159,25,4,0,8.2242
+REF_ST grid point,,1.0,1059.25,1,0,0,7.4508
