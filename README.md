@@ -45,7 +45,7 @@ The public data are not included. Download the two Zenodo records and the Emrich
 
 ```
 <project>/
-  calcium-fpt-code/                                                  (this repository)
+  KMOU-Calcium-experiment/                                           (this repository)
   Fluorescence Intensity Data from HEK293 Ca²⁺ Spike Trains_data/   one folder holding both Zenodo records:
       CChCB/*.txt   raw fluorescence traces      (Zenodo 10.5281/zenodo.15705673)
       2/*.csv       processed spike tables        (Zenodo 10.5281/zenodo.14779474)
