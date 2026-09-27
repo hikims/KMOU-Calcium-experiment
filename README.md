@@ -4,7 +4,7 @@ Code and stored results for
 
 > M. Kim, *First-passage analysis of stochastic recovery in a calcium relaxation oscillator calibrated on public HEK293 spike trains*, submitted to Communications in Nonlinear Science and Numerical Simulation (2026).
 
-Every figure of the main text (Figs. 1–7) and of the supplement (Figs. S1–S26, Tables S1–S13) is produced by the scripts in this repository. The C kernels integrate the deterministic and stochastic models (OpenMP), the Python scripts run the sweeps, analyse the public data and draw the figures.
+Every figure of the main text (Figs. 1–7) and of the supplement (Figs. S1–S26, Tables S1–S13) is produced by the scripts in this repository. Figures are not stored here; the `results/` folders hold the CSV output that the figures and the supplementary tables are built from, so that the reported numbers can be checked without re-running the long sweeps. The C kernels integrate the deterministic and stochastic models (OpenMP), the Python scripts run the sweeps, analyse the public data and draw the figures.
 
 ## Layout
 
@@ -30,7 +30,7 @@ Each computation lives in one folder with its own `README.md`, a C kernel (`*.c`
 | `emrich_replication` | re-analysis of the Emrich et al. source data | Figs. S22, S23 |
 | `emrich_jin_prediction` | basal-influx scenario | Figs. S24, S25 |
 | `round2_checks` | review-stage checks: CV-matched noise comparison, time-step refinement, direct influx runs, transient screen, bootstrap, window and gap sensitivity (`REPORT.md` summarises them) | Tables S7–S13 |
-| `assemble_paper_figures` | figure assembly | `figures/` |
+| `assemble_paper_figures` | figure assembly (writes `figures/`, not tracked) | Figs. 1–7, S1–S26 |
 
 Model definitions, parameter sets (`REF_ST`, `REF_PREV`) and the analysis conventions are those of the paper; the header of each C file states the equations it integrates.
 
