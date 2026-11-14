@@ -117,13 +117,7 @@ if __name__ == "__main__":
             jobs += [(1000 * fi + r, fi, pars, meta) for r in range(NREP)]
         res = pool.map(boot_job, jobs, chunksize=1)
         R = pd.DataFrame([dict(truth=NAMES[fi], **dict(zip(NAMES, tot))) for fi, tot in res]); R.to_csv(os.path.join(OUT, "b2_E_parametric_bootstrap_raw.csv"), index=False)
-        obs = dict(zip(NAMES, L.sum(0))); rows = []
-        for tr in NAMES:
-            g = R[R.truth == tr]
-            for alt in NAMES:
-                if alt == tr: continue
-                dsim = (g[tr] - g[alt]).values; dobs = obs[tr] - obs[alt]
-                rows.append(dict(truth=tr, alt=alt, dlogL_obs=dobs, sim_mean=dsim.mean(), sim_lo=np.quantile(dsim, .025), sim_hi=np.quantile(dsim, .975), p_sim_le_obs=float(np.mean(dsim <= dobs))))
-        Eb = pd.DataFrame(rows); Eb.to_csv(os.path.join(OUT, "b2_E_parametric_bootstrap.csv"), index=False)
+        obs = dict(zip(NAMES, L.sum(0)))
+        Eb = F.boot_summary(R, obs, NAMES); Eb.to_csv(os.path.join(OUT, "b2_E_parametric_bootstrap.csv"), index=False)   # failed fits excluded and counted
         print(f"\nE. parametric bootstrap ({NREP} replicates per truth): logL(truth) - logL(alt); observed value vs its distribution if 'truth' generated the data")
         print(Eb.to_string(index=False, float_format=fmt))

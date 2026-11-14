@@ -1,0 +1,7 @@
+item,n,alpha
+"data, all segments",196.0,0.22574129985447028
+"data, T_av 0-70 s",74.0,0.20023499984591348
+"data, T_av 70-160 s",83.0,0.2281118113785706
+"data, T_av 160-400 s",38.0,0.3056603676297202
+"reduced process, nu = 0.281",,0.2474213280778656
+"full model, CV-matched amplitude",23322.5,0.24548837891614878

@@ -101,3 +101,20 @@ def sample(fam, rng, n, m, cv):
 def detrend(x, t):
     if len(x) >= 4: b = np.polyfit(t, x, 1); return x - np.polyval(b, t) + x.mean()
     return x
+
+def boot_summary(R, obs, names, fail=1e9):
+    """Parametric-bootstrap summary.  R: one row per replicate with the total log-likelihood of every fitted family and
+    the generating family in column 'truth'; obs: observed totals.  A total beyond `fail` in absolute value marks a
+    replicate in which the fit of that family was infeasible in at least one segment (an interval at or below the
+    offset after frame rounding and detrending); such replicates are excluded pairwise and counted in n_failed."""
+    import pandas as pd
+    rows = []
+    for tr in names:
+        g = R[R.truth == tr]
+        for alt in names:
+            if alt == tr: continue
+            ok = (g[tr].abs() < fail) & (g[alt].abs() < fail); dsim = (g[tr] - g[alt])[ok].values; dobs = obs[tr] - obs[alt]
+            rows.append(dict(truth=tr, alt=alt, dlogL_obs=dobs, n_valid=int(ok.sum()), n_failed=int((~ok).sum()),
+                             sim_mean=dsim.mean() if len(dsim) else np.nan, sim_lo=np.quantile(dsim, .025) if len(dsim) else np.nan,
+                             sim_hi=np.quantile(dsim, .975) if len(dsim) else np.nan, p_sim_le_obs=float(np.mean(dsim <= dobs)) if len(dsim) else np.nan))
+    return pd.DataFrame(rows)
