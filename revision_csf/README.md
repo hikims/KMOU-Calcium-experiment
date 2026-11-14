@@ -22,6 +22,7 @@ compiled kernels: `m1_noiseform_sde` (this folder, `make`) and `../m0_joint_scan
 | `b1_fpt_density.py` | tables of the reduced first-passage densities (Crank–Nicolson on the backward equation); writes `results/b1_fpt_density_*.pkl` | – | 1 min |
 | `isifam.py`, `b2_family_comparison.py`, `b3_robustness.py` | likelihood comparison of eight interval families on the 196 segments, bootstrap, outlier component, parametric bootstrap, model as data | Section 6.3, Table 8, Tables S22–S28, Fig. S28 | 15 min |
 | `b2e_bootstrap_summary.py` | summary of the parametric bootstrap from its stored replicates; replicates with an infeasible fit are excluded pairwise and counted | Table S27 | 1 s |
+| `b2f_bootstrap_failures.py` | regenerates the bootstrap replicates and checks that the discarded ones are exactly those with an interval below the support of the families with offset | Table S27 | 1 min |
 | `j1_linear_law.py` | slope of the linear variability law for the data, the reduced process and the full model | Table 10 | 1 s |
 | `c1_hierarchical_slope.py` | record, cell and dose components of the variability law, mixed model, calibration of the estimators | Section 7.1, Table 9, Table S32, Fig. S29 | 2 min |
 | `c2_reduction_along_sweeps.py` | reduction constants and reduction error along the dose and cell axes | Sections 5.1 and 5.4, Tables S29–S30 | 1 min |
