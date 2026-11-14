@@ -1,0 +1,5 @@
+law,T_sp,loglog_slope_over_data_Tav
+common nu: sd ∝ (T_av - T_sp),0.0,1.0000000000000007
+common nu: sd ∝ (T_av - T_sp),8.6428,1.159787492536034
+common sigma_H: sd ∝ (T_av - T_sp)^1.5,0.0,1.500000000000001
+common sigma_H: sd ∝ (T_av - T_sp)^1.5,8.6428,1.739681238804051

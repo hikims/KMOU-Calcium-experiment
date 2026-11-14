@@ -6,8 +6,8 @@ authors:
     given-names: Minsoo
     affiliation: "Major of Data Science, Korea Maritime & Ocean University, Busan, Republic of Korea"
     email: hikims@kmou.ac.kr
-version: "1.0.0"
-date-released: "2026-09-27"
+version: "1.1.0"
+date-released: "2026-11-14"
 license: MIT
 repository-code: "https://github.com/hikims/KMOU-Calcium-experiment"
 preferred-citation:
@@ -16,5 +16,6 @@ preferred-citation:
     - family-names: Kim
       given-names: Minsoo
   title: "First-passage analysis of stochastic recovery in a calcium relaxation oscillator calibrated on public HEK293 spike trains"
-  journal: "Communications in Nonlinear Science and Numerical Simulation"
+  journal: "Chaos, Solitons & Fractals"
+  status: submitted
   year: 2026

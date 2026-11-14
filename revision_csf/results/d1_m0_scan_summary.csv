@@ -1,0 +1,14 @@
+criterion,n
+points scanned,40000
+oscillating at >= 3 stimulus values,6617
+C1: period ratio >= 6.95,2
+C1 lenient: >= 4.61,9
+C2: duty <= 0.15,3
+"C3: amplitude ratio in [0.5, 2]",5024
+C1 & C2,0
+C1 lenient & C2,0
+"C1 lenient & C2, sustained at lo/mid/hi",0
+C1 & C2 & C3,0
+"C1 lenient & C2 & C3, sustained",0
+"C2, sustained",0
+"C1 lenient, sustained",5

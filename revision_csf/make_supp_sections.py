@@ -1,0 +1,203 @@
+"""
+make_supp_sections.py — LaTeX source of the supplementary sections added in revision, with every table filled from the
+result files of this folder (no hand-typed numbers in tables).  Output: <R1>/supplement/revision_sections.tex
+"""
+import os, sys, numpy as np, pandas as pd
+HERE = os.path.dirname(os.path.abspath(__file__)); OUT = os.path.join(HERE, "results")
+DEST = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "..", "submit", "revision", "R1", "supplement", "revision_sections.tex")
+L = lambda n: pd.read_csv(os.path.join(OUT, n))
+def f(v, n=2, sign=False):
+    if v is None or (isinstance(v, float) and np.isnan(v)): return "--"
+    s = f"{v:+.{n}f}" if sign else f"{v:.{n}f}"
+    return "$" + s.replace("-", "-") + "$" if s.startswith(("-", "+")) else s
+def table(caption, label, spec, head, rows, size="\\small", note=""):
+    body = " \\\\\n".join(" & ".join(r) for r in rows)
+    return ("\\begin{table}[!htb]\n\\caption{" + caption + "}\n\\label{" + label + "}\n\\centering" + size + "\n\\begin{tabular*}{\\textwidth}{@{\\extracolsep{\\fill}}" + spec + "@{}}\n\\toprule\n"
+            + head + " \\\\\n\\midrule\n" + body + " \\\\\n\\bottomrule\n\\end{tabular*}\n" + note + "\\end{table}\n")
+T = []
+
+# ====================================================================== S13 theory
+C = L("a1_noise_forms_reference.csv").set_index("form"); X = L("a2_exact_vs_expansion.csv"); MC = L("a2_mc_check.csv")
+names = {"jacobi": "$H(1-H)$", "one_minus_H": "$1-H$", "cle": "$a_H(1-H)+b_HH$, $H_\\infty=0.997$", "additive": "constant", "H": "$H$"}
+rows = [[names[k], f(C.loc[k, "T0"], 4), f(C.loc[k, "mean_a1"], 4), f(C.loc[k, "var_a1"], 4), f(C.loc[k, "var_a2"], 3), f(C.loc[k, "k3_a2"], 3), f(C.loc[k, "k3_a3"], 2), f(C.loc[k, "R"], 3), f(C.loc[k, "cR_per_a"], 2)] for k in names]
+t_forms = table("Coefficients of the small-noise expansion for several diffusion coefficients $D(H)$ at $(H_0,H^\\ast)=(0.064,0.408)$ (script \\texttt{a1\\_general\\_expansion.py}): $\\E[\\tau]=T_0+a\\,m_1+\\dots$, $\\mathrm{Var}[\\tau]=a\\,v_1+a^2v_2+\\dots$, $\\kappa_3=a^2k_2+a^3k_3+\\dots$ with $a=\\nu^2/2$; $R=3T_0J_2/J_1^2$ is the limiting ratio of skewness to CV and $R\\,(1+c_Ra)$ its first correction.",
+                "t:rforms", "lcccccccc", "$D(H)$ & $T_0$ & $m_1$ & $v_1$ & $v_2$ & $k_2$ & $k_3$ & $R$ & $c_R$", rows)
+rows = []
+for form, nus in (("jacobi", (0.1, 0.2, 0.281, 0.4, 0.5)), ("cle", (0.05, 0.1, 0.15, 0.2, 0.281))):
+    for nu in nus:
+        r = X[(X.form == form) & np.isclose(X.nu, nu)].iloc[0]
+        rows.append([names[form] if nu == nus[0] else "", f(nu, 3), f(r.CV, 3), f(100 * r.err_mean, 2, True), f(100 * r.err_sd, 2, True), f(r.R, 3), f(r.R_limit, 3), f(r.R_next, 3)])
+t_exact = table("Exact cumulants of the reduced process (linear first-order system (A.2) of the main text, integrated numerically) against the two-term expansion: relative errors of the mean and of the standard deviation, and the ratio of skewness to CV with its limit and first correction (script \\texttt{a2\\_exact\\_vs\\_expansion.py}).",
+                "t:rexact", "lccccccc", "$D(H)$ & $\\nu$ & CV of $\\tau$ & err mean (\\%) & err sd (\\%) & skew/CV exact & limit $R$ & first correction", rows)
+HB = L("h1_remainder_bounds.csv"); d = HB[np.isclose(HB.H0, 0.064)]
+rows = [[f(r.nu, 3), f(r.mean_lo, 5), f(r["mean"], 5), f(r.mean_hi, 5), f"{r.var_lo:.3e}", f"{r['var']:.3e}", f"{r.var_hi:.3e}", f"{r.k3_lo:.3e}", f"{r.k3:.3e}", f"{r.k3_hi:.3e}"] for r in d[d.nu <= 0.61].itertuples(index=False) for r in [pd.Series(r._asdict())]]
+t_bounds = table("Bounds of Theorem~5.2(b) of the main text at the reference geometry: lower bound, exact value and upper bound of the mean, the variance and the third cumulant of $\\tau$. Over 15 geometries and 15 noise levels ($\\nu$ from $0.02$ to $3.5$) the exact values lie between the bounds in all 225 cases (script \\texttt{h1\\_remainder\\_bounds.py}).",
+                 "t:rbounds", "cccccccccc", "$\\nu$ & \\multicolumn{3}{c}{$\\E[\\tau]$: lower, exact, upper} & \\multicolumn{3}{c}{$\\mathrm{Var}[\\tau]$} & \\multicolumn{3}{c}{$\\kappa_3[\\tau]$}", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+E1 = L("e1_reflecting_boundary.csv"); E1b = L("e1b_boundary_exact_step.csv").set_index("nu")
+rows = []
+for r in E1.itertuples():
+    eb = E1b.loc[r.nu] if r.nu in E1b.index else None
+    rows.append([f(r.nu, 1), f(r.k, 2), r.boundary, f(r.mean_formula, 4), f(r.sd_formula, 4), f(100 * r.err_mean, 1, True), f(100 * r.err_sd, 1, True), f(100 * eb.err_mean, 1, True) if eb is not None else "--", f(100 * eb.err_sd, 1, True) if eb is not None else "--", f(100 * r.frac_paths_touching_0, 0)])
+t_boundary = table("The moment formula (12) of the main text beyond the entrance regime. Mean and standard deviation of $\\tau$ from the formula, and relative errors of two simulation schemes ($2\\times10^5$ paths, three time steps, extrapolated in the square root of the step; standard error of the mean about \\SI{0.2}{\\percent}): Euler--Maruyama with reflection at $0$, and a scheme that freezes the factor $(1-H)$ of the diffusion coefficient over a step and samples the resulting square-root process from its exact non-central chi-square transition law. Last column: fraction of Euler--Maruyama paths that touch $0$ (scripts \\texttt{e1\\_reflecting\\_boundary.py}, \\texttt{e1b\\_boundary\\_exact\\_step.py}).",
+                   "t:rboundary", "ccccccccccc"[:10], "$\\nu$ & $k$ & boundary $0$ & mean & sd & \\multicolumn{2}{c}{Euler--Maruyama: err mean, sd (\\%)} & \\multicolumn{2}{c}{exact step: err mean, sd (\\%)} & touching $0$ (\\%)", rows)
+LIF = L("i1_lif_check.csv"); rows = []
+for mu, g in LIF.groupby("mu"):
+    rows.append([f(mu, 1), f(g.R_limit.iloc[0], 2)] + [f"{f(r.skew_over_CV, 2)} ({f(r.CV, 2)})" for r in g.itertuples()])
+t_lif = table("Supra-threshold leaky integrate-and-fire model $\\dd V=(\\mu-V)\\,\\dd t+\\nu\\,\\dd W$, reset $0$, threshold $1$: limit $R$ of Proposition~5.3 of the main text and the exact ratio of skewness to CV at increasing noise (exact CV in parentheses). The ratio tends to $R$ as $\\mathrm{CV}\\to0$ and falls below three at $\\mathrm{CV}\\approx0.3$--$0.5$ (script \\texttt{i1\\_lif\\_check.py}).",
+              "t:rlif", "ccccccccc", "$\\mu$ & $R$ & \\multicolumn{7}{c}{exact skew/CV (CV), noise increasing from left to right}", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+T.append(r"""\section{First-passage theory: general diffusion coefficient, error bounds and the boundary}
+\label{s:rtheory}
+This section collects the numerical checks of the statements added to Section~5 of the main text in revision (folder \texttt{revision\_csf} of the code repository).
+
+\paragraph{General diffusion coefficient} For $\dd H=b\,\dd s+\nu\sqrt{D}\,\dd W$ the functions $u=-\kappa_1'$, $v=-\kappa_2'$, $w=-\kappa_3'$ obey the recursion $u=1/b-a(D/b)u'$, $v=2aDu^2/b-a(D/b)v'$, $w=6aDuv/b-a(D/b)w'$ (Eq.~(A.2) of the main text). Carried symbolically to third order for $b=1-H$, $D=H(1-H)$, it reproduces the coefficients of Theorem~5.2 of the main text exactly and gives the next coefficient of the third cumulant. Table~\ref{t:rforms} lists the coefficients for five diffusion coefficients, Table~\ref{t:rexact} compares the expansion with the exact cumulants obtained by integrating the linear system numerically, and an Euler--Maruyama simulation of the reduced process ($2\times10^5$ paths, steps $4\times10^{-4}$ and $10^{-4}$) agrees with the exact values within \SI{0.2}{\percent} (mean), \SI{0.1}{\percent} (CV) and \SI{1}{\percent} (skewness) at $\nu=0.15$, $0.3$ and $0.6$ for the three forms (\texttt{results/a2\_mc\_check.csv}). Figure~\ref{f:S27}(a) shows the ratio of skewness to CV against the noise level for the Jacobi and chemical-Langevin forms and for the leaky integrate-and-fire model (Table~\ref{t:rlif}).
+
+""" + t_forms + "\n" + t_exact + r"""
+\paragraph{Error bounds} Table~\ref{t:rbounds} and Fig.~\ref{f:S27}(b) show the two-sided bounds of Theorem~5.2(b).
+
+""" + t_bounds + r"""
+\paragraph{Boundary $0$ for $\nu^2>2$} Table~\ref{t:rboundary} and Fig.~\ref{f:S27}(c) compare the moment formula with two simulation schemes. The formula is confirmed up to $\nu=3.6$ by the scheme that treats the boundary exactly. The Euler--Maruyama scheme with reflection is accurate for $\nu\le2$ and too small by $2.6$, $10$ and \SI{22}{\percent} at $\nu=2.5$, $3$ and $3.6$; the three rows of Table~\ref{t:S4} with $\nu>1.5$ were computed with this scheme in the full model (rescaled step about $7\times10^{-5}$) and are not used in the main text.
+
+""" + t_boundary + "\n" + t_lif + r"""
+\suppfig{figS27_supp_revision_theory_checks}{Checks of the first-passage theory (folder \texttt{revision\_csf}). (a) Exact ratio of skewness to CV of the passage time against its CV for the Jacobi form (blue) and the chemical-Langevin form (green) at the reference geometry, with the limits $R$ (dashed) and the first corrections (dotted), and for the supra-threshold leaky integrate-and-fire model at three mean inputs (grey); horizontal lines: inverse Gaussian and gamma. (b) Exact mean, variance and third cumulant of $\tau$ divided by their leading terms, with the bounds of Theorem~5.2(b) (shaded). (c) Error of the simulated mean passage time against the moment formula for the two schemes of Table~\ref{t:rboundary}.}{f:S27}
+""")
+
+# ====================================================================== S14 forms and robustness
+G = L("g1_table.csv"); DM = {"CV": 0.196, "skew": 0.493, "amp_cv": 0.135, "corr_isi_amp": 0.053, "serial": -0.029}
+rows = []
+for pt, g in G.groupby("point", sort=False):
+    for i, r in enumerate(g.itertuples()):
+        lab = {"H": "$H$", "C": "Ca", "P": "IP$_3$"}[r.noise]
+        rows.append([pt.replace("epsH", "$\\varepsilon_H$").replace("S=", "$\\bar S=$").replace("n=2, dH=2000", "$n=2$, $d_H=2000$").replace("REF ($\\bar S=$1, $\\varepsilon_H$=1000)", "$\\bar S=1$, $\\varepsilon_H=1000$") if i == 0 else "", lab, f(r.sigma, 4), f(r.CV, 3), f"{f(r.skew, 2)} ({f(r.skew_seed_sd, 2)})", f"{f(r.amp_cv, 3)} ({f(r.amp_cv_seed_sd, 3)})", f"{f(r.corr_isi_amp, 2, True)} ({f(r.corr_isi_amp_seed_sd, 2)})", f"{f(r.serial, 2, True)} ({f(r.serial_seed_sd, 2)})"])
+rows.append(["data", "", "--", f(DM["CV"], 3), f(DM["skew"], 2), f(DM["amp_cv"], 3), f(DM["corr_isi_amp"], 2, True), f(DM["serial"], 2, True)])
+t_six = table("Noise-location comparison at six reference settings. At each setting the three amplitudes are re-tuned so that the segmented, detrended CV equals the data median; entries are medians over the segments of eight seeds, with the standard deviation across seeds of the per-seed median in parentheses (script \\texttt{g1\\_noise\\_location\\_sensitivity.py}). Unlisted parameters are those of $\\mathrm{REF}_{\\mathrm{ST}}$.",
+              "t:rsix", "llcccccc", "setting & noise & amplitude & CV & skew & amp.\\ CV & $\\rho(I,A)$ & $\\rho_1$", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+A3 = L("a3_matched_long.csv").set_index("form"); fn = {"jacobi": "$\\sigma_H^2H(1-H)$", "one_minus_H": "$\\sigma_H^2(1-H)$", "cle": "$[a_H(1-H)+b_HH]/N$"}
+rows = [[fn[k], f(A3.loc[k, "Tav"], 1), f(A3.loc[k, "CV"], 3), f(A3.loc[k, "skew"], 3), f(A3.loc[k, "R"], 2), f(A3.loc[k, "amp_cv"], 3), f"{f(A3.loc[k, 'Hon_mean'], 3)} ({f(A3.loc[k, 'Hon_sd'], 3)})", f"{f(A3.loc[k, 'Hoff_mean'], 3)} ({f(A3.loc[k, 'Hoff_sd'], 3)})", f(A3.loc[k, "corr_ISI_Hon"], 2, True), f(A3.loc[k, "corr_ISI_Hoff"], 2, True)] for k in ("jacobi", "one_minus_H", "cle")]
+t_long = table("Full model with three forms of the $H$-noise at the CV-matched amplitudes of Table~7 of the main text, without segmentation: means over four runs of about 23\\,000 intervals each (deterministic period $83.8$). $H_{\\mathrm{on}}$: value of $H$ at spike onset; $H_{\\mathrm{off}}$: minimum of $H$ after the spike; mean (standard deviation over spikes); last two columns: correlation of the interval with the onset value that ends it and with the reset value that starts it (script \\texttt{a3\\_noise\\_forms\\_full.py}).",
+               "t:rlong", "lccccccccc", "diffusion coefficient & $T_{\\mathrm{av}}$ & CV & skew & skew/CV & amp.\\ CV & $H_{\\mathrm{on}}$ & $H_{\\mathrm{off}}$ & $\\rho(I,H_{\\mathrm{on}})$ & $\\rho(I,H_{\\mathrm{off}})$", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+A4 = L("a4_slopes.csv"); rows = [[r.case.replace("jacobi", "Jacobi").replace("1-H", "$\\sqrt{1-H}$").replace("sigma_H", "$\\sigma_H$").replace("nu", "$\\nu$").replace("N", "$N$"), r.axis, f(r.slope, 2), f"{f(r.CV_min, 2)}--{f(r.CV_max, 2)}", f"{f(r.Tav_min, 0)}--{f(r.Tav_max, 0)}"] for r in A4.itertuples()]
+t_slopes = table("Log--log slopes of $\\sigma_{\\mathrm{ISI}}$ against $T_{\\mathrm{av}}$ in the full model for the three forms of the $H$-noise, at the amplitudes matched at the reference point (Table~7 of the main text). Cell axis: $\\varepsilon_H$ from 200 to 8000 at $\\bar S=1$; dose axis: $\\bar S$ from $0.05$ to $30$ at $\\varepsilon_H=1000$; three seeds per point. ``common $\\nu$ / fixed $\\sigma_H$'': the cell axis is run at common $\\nu$ and the dose axis at fixed $\\sigma_H$ (script \\texttt{a4\\_slopes\\_noise\\_forms.py}).",
+                 "t:rslopes", "llccc", "form and convention & axis & slope & range of CV & range of $T_{\\mathrm{av}}$", rows)
+T.append(r"""\section{Forms of the \texorpdfstring{$H$}{H}-noise and robustness of the noise-location comparison}
+\label{s:rforms}
+The kernel \texttt{m1\_noiseform\_sde.c} is a copy of \texttt{m1\_isi\_sde.c} with a selectable diffusion coefficient of the $H$-noise (Jacobi, $\sigma_H\sqrt{1-H}$, or the chemical Langevin equation (5) of the main text with the state-dependent rates of the model); with the Jacobi form it reproduces the original kernel digit for digit. Table~7 of the main text gives the segmented statistics of the three forms; Table~\ref{t:rlong} gives the unsegmented statistics together with the fluctuations of the onset and reset values of $H$, and Table~\ref{t:rslopes} the slopes of the variability law. Table~\ref{t:rsix} repeats the comparison of the three noise locations at six reference settings with eight seeds.
+
+""" + t_long + "\n" + t_slopes + "\n" + t_six)
+
+# ====================================================================== S15 interval densities
+A = L("b2_A_primary.csv"); Cs = L("b2_C_sensitivity.csv"); B3 = L("b3_contamination.csv"); Bo = L("b2_B_offset_profile.csv"); Po = L("b3_proportional_offset.csv"); Dm = L("b2_D_model_as_data.csv"); Eb = L("b2_E_parametric_bootstrap.csv"); Nd = L("b3_noise_by_dose.csv")
+fam = {"gamma": "gamma", "invgauss": "inverse Gaussian", "lognorm": "log-normal", "gamma+off": "gamma+off", "invgauss+off": "inverse Gaussian+off", "lognorm+off": "log-normal+off", "fpt_jacobi+off": "FPT-J+off", "fpt_cle+off": "FPT-CL+off"}
+order = ["lognorm+off", "invgauss+off", "lognorm", "fpt_jacobi+off", "invgauss", "fpt_cle+off", "gamma+off", "gamma"]
+def ci(lo, hi): return f"[{lo:+.0f}, {hi:+.0f}]".replace("+", "$+$").replace("-", "$-$")
+Ai = A.set_index("family"); rows = [[fam[k], f"{Ai.loc[k, 'logL']:.1f}", f(Ai.loc[k, "dlogL_vs_ref"], 1, True), ci(Ai.loc[k, "seg_lo"], Ai.loc[k, "seg_hi"]) if k != "fpt_jacobi+off" else "--", ci(Ai.loc[k, "rec_lo"], Ai.loc[k, "rec_hi"]) if k != "fpt_jacobi+off" else "--", str(int(Ai.loc[k, "n_best"]))] for k in order]
+t_prim = table("Interval densities, primary analysis: 196 segments, 5821 detrended intervals (43 intervals below $0.3$ of the segment mean dropped). Total log-likelihood, its difference from the Jacobi first-passage density with offset, bootstrap \\SI{95}{\\percent} intervals of the difference over segments and over records, and the number of segments in which the family is best (script \\texttt{b2\\_family\\_comparison.py}).",
+               "t:rprim", "lrrccr", "family & $\\log L$ & $\\Delta$ & segment bootstrap & record bootstrap & best in", rows)
+rows = []
+variants = [("all intervals + 1\\,\\% outlier component", Cs[Cs.variant.str.startswith("all intervals")]), ("no detrending", Cs[Cs.variant.str.startswith("no detrending")]), ("two burst segments removed", Cs[Cs.variant.str.startswith("two burst")]), ("doublets dropped + 1\\,\\% outliers", B3[B3.eps == 0.01]), ("doublets dropped + 2\\,\\% outliers", B3[B3.eps == 0.02])]
+for k in order:
+    row = [fam[k]]
+    for lab, V in variants:
+        r = V.set_index("family").loc[k]; row.append("0" if k == "fpt_jacobi+off" else f"{f(r.dlogL_vs_ref, 0, True)} {ci(r.seg_lo, r.seg_hi)}")
+    rows.append(row)
+t_sens = table("Interval densities, sensitivity: difference of the total log-likelihood from the Jacobi first-passage density with offset, with segment-bootstrap \\SI{95}{\\percent} intervals, for five variants of the analysis. The outlier component is a uniform density on $[0,6\\times\\text{segment mean}]$ of fixed weight added to every family (scripts \\texttt{b2\\_family\\_comparison.py}, \\texttt{b3\\_robustness.py}).",
+               "t:rsens", "lccccc", "family & " + " & ".join("\\makecell{" + v[0].replace(" + ", "\\\\+ ").replace(" segments", "\\\\segments") + "}" for v in variants), rows, size="\\scriptsize\\setlength{\\tabcolsep}{1.5pt}")
+f5 = ["gamma", "invgauss", "lognorm", "fpt_jacobi", "fpt_cle"]; ref = Bo.set_index("delta").loc[0.0]; rows = [[f(r.delta, 2)] + [f(r[k] - ref[k], 1, True) for k in f5] for _, r in Bo.iterrows()]
+t_off = table("Gain in total log-likelihood over the family without offset, against a common offset $\\delta$ (s). $\\delta=8.64$ is the offset of the model at $\\mathrm{REF}_{\\mathrm{ST}}$.", "t:roff", "cccccc", "$\\delta$ & gamma & inverse Gaussian & log-normal & FPT Jacobi & FPT chemical Langevin", rows)
+Pp = Po[Po.phi <= 0.2]; ref = Pp.set_index("phi").loc[0.0]; rows = [[f(r.phi, 2)] + [f(r[k] - ref[k], 1, True) for k in f5] for _, r in Pp.iterrows()]
+t_prop = table("As Table~\\ref{t:roff} for an offset proportional to the mean of the segment, $\\delta_i=\\varphi\\,\\bar I_i$. Larger $\\varphi$ exceeds the shortest interval of some segment. The model has $T_{\\mathrm{sp}}/T_{\\mathrm{det}}=0.17$--$0.22$ along the dose axis.", "t:rprop", "cccccc", "$\\varphi$ & gamma & inverse Gaussian & log-normal & FPT Jacobi & FPT chemical Langevin", rows)
+rows = []
+for tr in Dm.truth.unique():
+    g = Dm[Dm.truth == tr].set_index("family")
+    for i, k in enumerate(order): rows.append([("Jacobi full model" if "jacobi" in tr else "chemical-Langevin full model") if i == 0 else "", fam[k], f"{g.loc[k, 'logL']:.1f}", f(g.loc[k, "dlogL_vs_ref"], 1, True), ci(g.loc[k, "seg_lo"], g.loc[k, "seg_hi"]) if k != "fpt_jacobi+off" else "--"])
+t_mad = table("Model as data: intervals of the full model at the CV-matched amplitude (six seeds, time unit \\SI{0.527}{s}), cut into the data segment lengths and detrended (7965 intervals for the Jacobi form, 7888 for the chemical-Langevin form), fitted with the same eight families.", "t:rmad", "llrrc", "simulated data & family & $\\log L$ & $\\Delta$ vs FPT-J+off & segment bootstrap", rows, size="\\footnotesize")
+keep = [("lognorm+off", "fpt_jacobi+off"), ("lognorm+off", "invgauss+off"), ("lognorm+off", "gamma+off"), ("invgauss+off", "lognorm+off"), ("invgauss+off", "fpt_jacobi+off"), ("invgauss+off", "gamma+off"), ("fpt_jacobi+off", "invgauss+off"), ("fpt_jacobi+off", "lognorm+off"), ("fpt_jacobi+off", "gamma+off"), ("fpt_cle+off", "invgauss+off"), ("gamma+off", "invgauss+off"), ("gamma+off", "fpt_jacobi+off")]
+rows = []
+for tr, al in keep:
+    r = Eb[(Eb.truth == tr) & (Eb.alt == al)].iloc[0]; rows.append([fam[tr], fam[al], f(r.dlogL_obs, 1, True), f(r.sim_mean, 1, True), ci(r.sim_lo, r.sim_hi)])
+t_pb = table("Parametric bootstrap. Data sets are regenerated from each fitted family (``truth'') with the segment lengths, frame intervals and detrending of the data (60 replicates) and fitted with all families. $\\log L(\\text{truth})-\\log L(\\text{alternative})$: observed value, and mean and central \\SI{95}{\\percent} range of the simulated values. Only pairs of families with the same offset are listed, because a family with offset cannot fit data generated without it.", "t:rpb", "llccc", "truth & alternative & observed & simulated mean & simulated range", rows)
+rows = [[str(int(d)), str(int(r.segments)), f"{f(r.nu_jacobi_median, 2)} ({f(r.nu_q25, 2)}--{f(r.nu_q75, 2)})", f"{f(r.N_cle_median, 0)} ({f(r.N_q25, 0)}--{f(r.N_q75, 0)})", f(r.mean_recovery_s, 0)] for d, r in Nd.set_index("dose").iterrows()]
+t_nud = table("Noise parameters fitted to the segments, by dose: $\\nu$ of the Jacobi first-passage density and $N=1/\\nu^2$ of the chemical-Langevin first-passage density (median and interquartile range over segments; reference geometry, offset \\SI{8.64}{s}), and the median fitted mean of the recovery part of the interval.", "t:rnud", "ccccc", "dose (\\si{\\micro\\Molar}) & segments & $\\nu$ (Jacobi) & $N$ (chemical Langevin) & recovery time (s)", rows)
+T.append(r"""\section{Likelihood comparison of interval densities}
+\label{s:rdensity}
+\paragraph{Method} For each of the 196 segments with at least ten spikes the intervals are detrended as in Section~\ref{s:data}; intervals shorter than $0.3$ of the segment mean are dropped in the primary analysis (43 of 5864, 37 of them in two segments with seven and thirty such intervals). Every family describes the shifted interval $I-\delta$ with two free parameters, its mean $m$ and its coefficient of variation: a gamma, an inverse-Gaussian or a log-normal density, or the density of $\eeff\tau$ with $\tau$ the passage time of the reduced process from $H_0=0.064$ to $H^\ast=0.408$, for which the two parameters are equivalent to $\eeff$ and $\nu$. The density of $\tau$ is obtained from the backward equation for the survival function, $\partial_sS=b\,\partial_xS+aD\,\partial_x^2S$ with $S(H^\ast,s)=0$ and $S(x,0)=1$, solved by the Crank--Nicolson method on a grid refined toward $H^\ast$ and tabulated for 211 values of $\nu$; the tabulated densities have unit mass within $10^{-7}$ and reproduce the exact mean, standard deviation and skewness within $10^{-6}$, $10^{-4}$ and $10^{-2}$ in the range of the fits (script \texttt{b1\_fpt\_density.py}). Spike times are recorded on a frame grid whose step is $4$, $1$ or \SI{0.5}{s} in 131 of the segments, so the likelihood of an interval is the density averaged with the triangular kernel of half-width equal to the frame step. The parameters are found by Nelder--Mead maximisation from three starting points. Uncertainty is assessed by resampling segments or whole records.
+
+\paragraph{Results} Table~\ref{t:rprim} gives the primary analysis, Table~\ref{t:rsens} five variants, Tables~\ref{t:roff} and \ref{t:rprop} the profiles over a common and a proportional offset, Table~\ref{t:rmad} the same analysis applied to intervals of the full model, Table~\ref{t:rpb} the parametric bootstrap, and Table~\ref{t:rnud} the fitted noise parameters by dose; Fig.~\ref{f:S28} summarises them. Without detrending the ordering of the families is the same and the differences are larger. With an outlier component and the doublets retained, the families without offset come out ahead of those with offset, because the doublets lie below the offset and must be assigned to the outlier component; this variant is listed for completeness and is not used in the main text.
+
+""" + t_prim + "\n" + t_sens + "\n" + t_off + "\n" + t_prop + "\n" + t_mad + "\n" + t_pb + "\n" + t_nud + r"""
+\suppfig{figS28_supp_revision_interval_densities}{Interval densities (folder \texttt{revision\_csf}). (a) Difference of the total log-likelihood from the Jacobi first-passage density with offset, with segment-bootstrap \SI{95}{\percent} intervals: plain likelihood (filled) and with a \SI{1}{\percent} outlier component (open). (b) Gain in log-likelihood against a common offset. (c) Gain against an offset proportional to the segment mean; shaded: $T_{\mathrm{sp}}/T_{\mathrm{det}}$ of the model. (d) Fitted $\nu$ of the Jacobi form by dose (median and interquartile range over segments), with the dose dependence of the model at fixed $\sigma_H$ (scaled to the \SI{15}{\micro\Molar} value) and the constant value implied by a fixed number of units.}{f:S28}
+""")
+
+# ====================================================================== S16 components and reduction along sweeps
+Dd = L("c2_dose_axis.csv"); Cc = L("c2_cell_axis.csv"); mapped = {0.064: "3", 0.11: "5", 0.21: "10", 0.32: "15", 0.64: "30"}
+def redrows(Tb, key):
+    out = []
+    for r in Tb.itertuples():
+        lab = f(r.S, 3) + (f" ({mapped[round(r.S, 3)]}\\,\\si{{\\micro\\Molar}})" if round(r.S, 3) in mapped else "") if key == "S" else f(r.epsH, 0)
+        out.append([lab, f(r.Tdet, 1), f(r.kappa, 2), f(r.eps_eff, 0), f(r.H_off, 3), f(r.H_on, 3), f(r.T_sp, 1), f(r.Tsp_over_Tdet, 2), f(r.nu, 2), f(r.Tav_full, 1), f(r.CV_full, 3), f(100 * r.err_mean, 1, True), f(100 * r.err_sd, 1, True)])
+    return out
+hd = " & $T_{\\mathrm{det}}$ & $\\kappa$ & $\\eeff$ & $H_{\\mathrm{off}}$ & $H_{\\mathrm{on}}$ & $T_{\\mathrm{sp}}$ & $T_{\\mathrm{sp}}/T_{\\mathrm{det}}$ & $\\nu$ & $\\Tav$ full & CV full & err mean (\\%) & err sd (\\%)"
+t_rd = table("Reduction constants and reduction error along the dose axis ($\\eH=1000$, $\\sigma_H=0.026$): deterministic period, recovery factor $\\kappa=f_Cf_PQ$ at the rest state, $\\eeff=\\eH/\\kappa$, reset and onset values of $H$, offset $T_{\\mathrm{sp}}=T_{\\mathrm{det}}-\\eeff\\ln[(1-H_{\\mathrm{off}})/(1-H_{\\mathrm{on}})]$, effective noise $\\nu=\\sigma_H\\sqrt{\\eeff}$, full-model mean and CV (two runs of at least 600 periods), and the error of the reduced mean and standard deviation relative to the full model. Log--log slope of $\\sigma_{\\mathrm{ISI}}$ against $\\Tav$: $1.60$ (full), $1.54$ (reduced) (script \\texttt{c2\\_reduction\\_along\\_sweeps.py}).",
+             "t:rreddose", "lcccccccccccc", "$\\Sb$ (dose)" + hd, redrows(Dd, "S"), size="\\scriptsize\\setlength{\\tabcolsep}{1.5pt}")
+t_rc = table("As Table~\\ref{t:rreddose} along the cell axis ($\\Sb=1$, common $\\nu$: $\\sigma_H\\sqrt{\\eH}=0.822$). Log--log slope: $1.03$ (full), $0.95$ (reduced).", "t:rredcell", "lcccccccccccc", "$\\eH$" + hd, redrows(Cc, "e"), size="\\scriptsize\\setlength{\\tabcolsep}{1.5pt}")
+P41 = L("c3_prop41_check.csv"); rows = [[f"{f(r.S1, 3)} $\\to$ {f(r.S2, 2)}", f(r.T_ratio, 2), f(r.fP_ratio, 2), f(100 * r.Hoff_change, 1, True), f(100 * r.Hon_change, 1, True), f(100 * r.W50_change, 1, True), f(100 * r.amp_change, 1, True), f(r.Tsp_ratio, 2)] for r in P41.itertuples()]
+t_p41 = table("Proposition~4.1 of the main text in the full model: period ratio between two stimulus levels against the bound $f_P(\\bar P(\\Sb_2))/f_P(\\bar P(\\Sb_1))$, and the changes of the reset value, the onset value, the half-width and the amplitude of the spike (per cent) and of the offset (ratio) between the two levels.", "t:rp41", "lccccccc", "$\\Sb_1\\to\\Sb_2$ & period ratio & bound & $H_{\\mathrm{off}}$ & $H_{\\mathrm{on}}$ & half-width & amplitude & $T_{\\mathrm{sp}}$ ratio", rows)
+SLt = L("c1_slopes.csv"); MM = L("c1_mixed_model.csv").set_index(L("c1_mixed_model.csv").columns[0]); CAL = L("c1_calibration_raw.csv")
+cn = {"pooled": "pooled", "xr": "between records", "xc": "between cells of a record", "xs": "same cell, different dose", "xw": "same cell and dose, later segment"}
+rows = []
+for c in cn:
+    a_ = SLt[(SLt.regressor == "log T_av") & (SLt.component == c)].iloc[0]; b_ = SLt[(SLt.regressor != "log T_av") & (SLt.component == c)].iloc[0]; g = CAL.groupby("s_true")[c]
+    rows.append([cn[c], f"{f(a_.slope, 2)} [{f(a_.rec_lo, 2)}, {f(a_.rec_hi, 2)}]", f"{f(MM.loc[c, 'slope'], 2)} [{f(MM.loc[c, 'lo'], 2)}, {f(MM.loc[c, 'hi'], 2)}]" if c in MM.index else "--", f"{f(b_.slope, 2)} [{f(b_.rec_lo, 2)}, {f(b_.rec_hi, 2)}]"] + [f"{f(g.mean().loc[s], 2)} ({f(g.std().loc[s], 2)})" for s in (1.0, 1.33, 1.5)])
+t_cal = table("Components of the $\\sigma$--$\\Tav$ law: slope with record-bootstrap \\SI{95}{\\percent} interval; mixed model with random intercepts for record and cell; the same with $\\log(\\Tav-\\SI{8.64}{s})$ as regressor; and the calibration of the estimators on synthetic data with the data design for three true exponents (mean and standard deviation of the estimate over 300 data sets) (script \\texttt{c1\\_hierarchical\\_slope.py}).",
+              "t:rcal", "lcccccc", "component & slope & mixed model & offset removed & true 1 & true 1.33 & true 1.5", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+F2 = L("f2_by_dose.csv"); rows = []
+for d_ in (3, 5, 10, 15, 30):
+    a_ = F2[(F2.dose == d_) & F2.variant.str.startswith("n=1")].iloc[0]; b_ = F2[(F2.dose == d_) & F2.variant.str.startswith("n=2")].iloc[0]
+    rows.append([str(d_), str(int(a_.nseg)), f(a_.data_CV, 3), f(a_.data_skew, 2), f(a_.data_amp_cv, 3), f(a_.S, 3), f(a_.CV, 3), f(a_["skew"], 2), f(a_.amp_cv, 3), f(b_.CV, 3), f(b_["skew"], 2), f(b_.amp_cv, 3)])
+t_cvd = table("Interval statistics by dose with a single $\\sigma_H$ tuned at the \\SI{15}{\\micro\\Molar} stimulus only (segmented, detrended; four seeds): data medians over the segments of each dose, the model with the hyperbolic rate coupling ($n=1$, $\\sigma_H=0.019$) and with the cooperative one ($n=2$, $d_H=2000$, $\\sigma_H=0.029$) (script \\texttt{f2\\_dynamic\\_range\\_stochastic.py}).",
+              "t:rcvd", "cccccccccccc", "dose & segments & \\multicolumn{3}{c}{data: CV, skew, amp.\\ CV} & $\\Sb$ & \\multicolumn{3}{c}{$n=1$: CV, skew, amp.\\ CV} & \\multicolumn{3}{c}{$n=2$: CV, skew, amp.\\ CV}", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+T.append(r"""\section{Components of the variability law and the reduction along the sweeps}
+\label{s:rcomp}
+\paragraph{Reduction constants} Tables~\ref{t:rreddose} and \ref{t:rredcell} give, for every point of the two sweeps, the constants of the reduction and its error. The offset $T_{\mathrm{sp}}$ is not constant: it follows the recovery time on both axes. Along the dose axis the effective noise $\nu$ runs from $0.25$ to $0.62$ and the reduction underestimates the standard deviation by up to \SI{16}{\percent} at low stimulus. Table~\ref{t:rp41} examines the assumptions of Proposition~4.1.
+
+""" + t_rd + "\n" + t_rc + "\n" + t_p41 + r"""
+\paragraph{Components of the law} For each segment, $x=\log\Tav$ is written as $x=\bar x_{\mathrm{record}}+(\bar x_{\mathrm{cell}}-\bar x_{\mathrm{record}})+(\bar x_{\mathrm{train}}-\bar x_{\mathrm{cell}})+(x-\bar x_{\mathrm{train}})$, a train being one cell at one dose, and $\log\sigma_{\mathrm{ISI}}$ is regressed on the four parts. Table~\ref{t:rcal} gives the slopes, the mixed-model estimates, the slopes with the offset removed from the regressor, and the calibration of the estimators. For the calibration each synthetic data set keeps the mean interval, the number of intervals and the frame step of every segment, draws inverse-Gaussian intervals with an offset of \SI{8.64}{s} whose standard deviation follows $\log\sigma=a+s\log\Tav$ plus a cell-level normal scatter (standard deviation $0.5$, chosen so that the residual spread about the pooled line equals the observed $0.61$), rounds the spike times to the frame grid and detrends. Table~\ref{t:rcvd} and Fig.~\ref{f:S29}(b) give the interval statistics by dose for a single noise amplitude.
+
+""" + t_cal + "\n" + t_cvd + r"""
+\suppfig{figS29_supp_revision_law_components}{Components of the variability law (folder \texttt{revision\_csf}). (a) Slope of $\log\sigma_{\mathrm{ISI}}$ on each part of $\log\Tav$ with record-bootstrap \SI{95}{\percent} intervals, and the slopes of the full model for the cell axis and the dose axis under the stated conventions. (b) CV of the ISI by dose: data, the model with one $\sigma_H$ tuned at \SI{15}{\micro\Molar} for the hyperbolic and the cooperative rate coupling, and the chemical-Langevin form with a fixed number of units. (c) Calibration of the slope estimators on synthetic data.}{f:S29}
+""")
+
+# ====================================================================== S17 dynamic range and dose map
+SM = L("f1_summary.csv"); rows = [[f"{int(r.nP)}", f"{int(r.dH)}", f"{int(r.gH)}", f(r.ratio_per_decade, 2), f"{f(r.S_lo, 3)}--{f(r.S_hi, 2)}", f(100 * (r.W50_ratio - 1), 0, True), f(100 * (r.amp_ratio - 1), 0, True), f"{f(r.Hon_lo, 3)}--{f(r.Hon_hi, 3)}", f(r.duty_hi, 2), f(r.ratio_full_range, 1)] for r in SM.itertuples()]
+t_range = table("Rate coupling $f_P=1+g_HP^n/(d_H^n+P^n)$: largest ratio of the deterministic period over one decade of stimulus (data: $6.95$ between 3 and \\SI{30}{\\micro\\Molar}), the decade in which it is attained, the change of the half-width and of the amplitude across that decade, the onset value of $H$ at its two ends, the duty cycle at its high end, and the period ratio over $\\Sb\\in[0.01,30]$. First row: the manuscript (script \\texttt{f1\\_dynamic\\_range.py}).",
+                "t:rrange", "cccccccccc", "$n$ & $d_H$ & $g_H$ & ratio per decade & decade of $\\Sb$ & half-width (\\%) & amplitude (\\%) & $H_{\\mathrm{on}}$ & duty & ratio, whole range", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+DMp = L("f2_dose_map.csv"); rows = [["data (train medians)", "--", "--", "226", "92", "128", "94", "33", "6.95", "--"]]
+for r in DMp.itertuples():
+    if "saturating" in r.map: continue
+    rows.append([("$n=1$" if "n=1" in r.variant else "$n=2$, $d_H=2000$") + ", " + r.map.replace(", linear", ""), f(r.c, 3), f(r.T0_s, 3), f(r.ISI_3, 0), f(r.ISI_5, 0), f(r.ISI_10, 0), f(r.ISI_15, 0), f(r.ISI_30, 0), f(r.ratio_3_30, 2), f(r.log_rms, 2)])
+t_dm = table("Dose maps $\\Sb=c\\,[\\mathrm{CCh}]$ and time unit $t_{\\mathrm{unit}}$ for the hyperbolic and the cooperative rate coupling: fixed by the two end points (largest period ratio over a decade, geometric balance of the two end-point errors) or by least squares over the five train-level medians; predicted ISI (s) at the five doses, ratio between 3 and \\SI{30}{\\micro\\Molar}, and root-mean-square error of the logarithm. A saturating map $\\Sb=c\\,[\\mathrm{CCh}]/(K+[\\mathrm{CCh}])$ fitted by least squares returns $K\\to\\infty$ for both couplings, i.e.\\ the linear map (script \\texttt{f2\\_dynamic\\_range\\_stochastic.py}).",
+             "t:rdm", "lccccccccc", "coupling, map & $c$ & $t_{\\mathrm{unit}}$ (s) & 3 & 5 & 10 & 15 & 30 & ratio & log-RMS", rows, size="\\footnotesize\\setlength{\\tabcolsep}{2pt}")
+T.append(r"""\section{Cooperative rate coupling, dynamic range and dose maps}
+\label{s:rrange}
+The kernel of Section~\ref{s:rforms} has a Hill exponent $n$ in the rate coupling, $f_P=1+g_HP^n/(d_H^n+P^n)$; $n=1$ is the manuscript. Table~\ref{t:rrange} and Fig.~\ref{f:S30}(a) give the period ratio per decade of stimulus for several $(n,d_H,g_H)$. With $n=1$ the combinations examined give at most $3.8$; $n=2$ with $d_H=2000$ gives $7.05$ on the stimulus window of the manuscript's dose map, at the cost of a less stereotyped spike (Fig.~\ref{f:S30}(c)). Table~\ref{t:rdm} and Fig.~\ref{f:S30}(b) compare the dose maps, and Table~\ref{t:rcvd} the interval statistics by dose; the noise-location comparison at the cooperative reference point is the last block of Table~\ref{t:rsix}.
+
+""" + t_range + "\n" + t_dm + r"""
+\suppfig{figS30_supp_revision_dynamic_range}{Dynamic range (folder \texttt{revision\_csf}). (a) Deterministic period against stimulus for the hyperbolic rate coupling of the manuscript and for cooperative couplings with $n=2$ and $n=3$; thick: the decade of stimulus with the largest period ratio. (b) Predicted ISI at the five doses for $n=1$ and $n=2$ with the end-point and the least-squares dose map, against the train medians of the data (bootstrap \SI{95}{\percent} intervals). (c) Half-width and amplitude of the spike across the steepest decade, relative to its low end; horizontal lines: within-cell ratios of the data between 5 and \SI{30}{\micro\Molar}.}{f:S30}
+""")
+
+# ====================================================================== S18 M0
+Sm = L("d1_m0_scan_summary.csv").set_index("criterion").n; D2 = L("d2_m0_directed_search.csv"); D2["id"] = D2.start.str.split(":").str[1]; U = D2.drop_duplicates("id").sort_values("J")
+rows = [["points scanned", "1500", f"{int(Sm['points scanned'])}"], ["oscillating at $\\ge3$ stimulus levels", "232", f"{int(Sm['oscillating at >= 3 stimulus values'])}"], ["C1: period ratio $\\ge6.95$", "0", f"{int(Sm['C1: period ratio >= 6.95'])}"],
+        ["C1 relaxed: period ratio $\\ge4.6$", "1", f"{int(Sm['C1 lenient: >= 4.61'])} ({int(Sm['C1 lenient, sustained'])} sustained)"], ["C2: duty $\\le0.15$", "1 (damped transient)", f"{int(Sm['C2: duty <= 0.15'])} ({int(Sm['C2, sustained'])} sustained)"],
+        ["C3: amplitude ratio in $[0.5,2]$", "174", f"{int(Sm['C3: amplitude ratio in [0.5, 2]'])}"], ["C1 relaxed and C2", "0", f"{int(Sm['C1 lenient & C2'])}"]]
+t_m0 = table("Joint scan of M0 with 40\\,000 Latin-hypercube points (seed 2) against the 1500 points of Table~\\ref{t:S2}; same box, stimulus levels and criteria. Sustained: last-quarter amplitude at least half of the first-quarter amplitude at the low, middle and high stimulus of the window (script \\texttt{d1\\_m0\\_scan\\_analysis.py}).", "t:rm0", "lcc", "criterion & 1500 points & 40\\,000 points", rows)
+rows = [[r.id, f(r.ratio_start, 2), f(r.duty_start, 2), f(r.J_start, 2), f(r.ratio, 2), f(r.duty, 2), f(r.J, 2), f"{r['lambda']:.3g}", f"{r.epsH:.3g}", f"{r.beta:.3g}"] for _, r in U.head(12).iterrows()]
+t_ds = table(f"Directed search for M0. Nelder--Mead minimisation of $J=\\max\\{{0,\\ln(4.6/r)\\}}+\\max\\{{0,\\ln(d/0.15)\\}}$ in the ten log-parameters inside the scan box (300 evaluations), from the {len(U)} most promising points of the 40\\,000-point scan; $r$: period ratio and $d$: maximal duty cycle of the best admissible stimulus window. The twelve end points with the smallest $J$ are listed; no search reached $J=0$ (smallest value {U.J.min():.2f}). Among all end points, those with $d\\le0.2$ have $r\\le{U[U.duty <= 0.2].ratio.max():.2f}$ and those with $r\\ge4.6$ have $d\\ge{U[U.ratio >= 4.61].duty.min():.2f}$ (script \\texttt{{d2\\_m0\\_directed\\_search.py}}).",
+             "t:rds", "lccccccccc", "scan point & \\multicolumn{3}{c}{start: $r$, $d$, $J$} & \\multicolumn{3}{c}{end: $r$, $d$, $J$} & $\\lambda$ & $\\varepsilon_H$ & $\\beta$", rows, size="\\footnotesize")
+T.append(r"""\section{Extended scan and directed search for M0}
+\label{s:rm0}
+The scan of Section~\ref{s:m0} was repeated with 40\,000 points (Table~\ref{t:rm0}). The nine points that reach the relaxed period-ratio threshold have duty cycles of $0.54$--$0.60$; the three points with a duty cycle below $0.15$ have period ratios of at most $1.1$ and are damped transients. Because a Latin-hypercube sample of this size still has fewer than three points per axis in ten dimensions, the scan was complemented by a directed search from its best points (Table~\ref{t:rds}). The end points fall into two groups, a narrow spike with a small period ratio or a large period ratio with a broad spike, and none meets both criteria.
+
+""" + t_m0 + "\n" + t_ds)
+
+open(DEST, "w").write("% generated by code/revision_csf/make_supp_sections.py -- do not edit by hand\n\n" + "\n% ---------------------------------------------------------------------\n".join(T))
+print("wrote", DEST, sum(t.count("\\begin{table}") for t in T), "tables")

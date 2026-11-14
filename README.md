@@ -2,9 +2,9 @@
 
 Code and stored results for
 
-> M. Kim, *First-passage analysis of stochastic recovery in a calcium relaxation oscillator calibrated on public HEK293 spike trains*, submitted to Communications in Nonlinear Science and Numerical Simulation (2026).
+> M. Kim, *First-passage analysis of stochastic recovery in a calcium relaxation oscillator calibrated on public HEK293 spike trains*, under revision at Chaos, Solitons & Fractals (2026).
 
-Every figure of the main text (Figs. 1–7) and of the supplement (Figs. S1–S26, Tables S1–S13) is produced by the scripts in this repository. Figures are not stored here; the `results/` folders hold the CSV output that the figures and the supplementary tables are built from, so that the reported numbers can be checked without re-running the long sweeps. The C kernels integrate the deterministic and stochastic models (OpenMP), the Python scripts run the sweeps, analyse the public data and draw the figures.
+Every figure of the main text (Figs. 1–7) and of the supplement (Figs. S1–S30, Tables S1–S37) is produced by the scripts in this repository. The analyses added in the first revision (main-text Tables 7–9, Sections S13–S18 of the supplement) are in `revision_csf/`. Figures are not stored here; the `results/` folders hold the CSV output that the figures and the supplementary tables are built from, so that the reported numbers can be checked without re-running the long sweeps. The C kernels integrate the deterministic and stochastic models (OpenMP), the Python scripts run the sweeps, analyse the public data and draw the figures.
 
 ## Layout
 
@@ -30,6 +30,7 @@ Each computation lives in one folder with its own `README.md`, a C kernel (`*.c`
 | `emrich_replication` | re-analysis of the Emrich et al. source data | Figs. S22, S23 |
 | `emrich_jin_prediction` | basal-influx scenario | Figs. S24, S25 |
 | `round2_checks` | review-stage checks: CV-matched noise comparison, time-step refinement, direct influx runs, transient screen, bootstrap, window and gap sensitivity (`REPORT.md` summarises them) | Tables S7–S13 |
+| `revision_csf` | analyses added in the first revision: general diffusion coefficient and error bounds, forms of the H-noise, likelihood comparison of interval densities, components of the variability law, cooperative rate coupling, extended scan of M0 (see its `README.md`) | Fig. 5 (revised), Tables 7–9, Figs. S27–S30, Tables S14–S37 |
 | `assemble_paper_figures` | figure assembly (writes `figures/`, not tracked) | Figs. 1–7, S1–S26 |
 
 Model definitions, parameter sets (`REF_ST`, `REF_PREV`) and the analysis conventions are those of the paper; the header of each C file states the equations it integrates.
@@ -37,7 +38,7 @@ Model definitions, parameter sets (`REF_ST`, `REF_PREV`) and the analysis conven
 ## Requirements
 
 - A C compiler. OpenMP is used when available (macOS: `xcode-select --install` and `brew install libomp`; Linux: gcc). Without OpenMP the kernels build serially.
-- Python 3.10 or later with `numpy`, `pandas`, `scipy`, `matplotlib`, `sympy`, `openpyxl` (`pip install -r requirements.txt`). The stored results were produced with numpy 2.3, pandas 2.2, scipy 1.17, matplotlib 3.10, sympy 1.14.
+- Python 3.10 or later with `numpy`, `pandas`, `scipy`, `matplotlib`, `sympy`, `openpyxl` (`pip install -r requirements.txt`); `statsmodels` is used for one optional step of `revision_csf`. The stored results were produced with numpy 2.3, pandas 2.2, scipy 1.17, matplotlib 3.10, sympy 1.14.
 
 ## Data
 
@@ -64,6 +65,8 @@ From the repository root:
 ```
 
 `RUN_ALL.sh` re-runs only the light steps and reuses the stored scans (joint scan, bifurcation grids, asymptotics, particle filter). Each folder can also be run on its own (`make && ./run_*.sh && python3 plot_*.py`; see its `README.md`). The assembled figures appear in `assemble_paper_figures/figures/`; failures, if any, are listed in `assemble_paper_figures/figures/assemble_log.txt`.
+
+The revision analyses are run script by script from `revision_csf/` (order and run times in its `README.md`); they are not part of `RUN_ALL.sh`. In the revised manuscript the full-model points of Fig. 5 are restricted to ν ≤ 1.2, and that figure is drawn by `revision_csf/fig4_revised.py`.
 
 The review-stage checks are run with `cd round2_checks && ./run_all.sh`; they use the compiled kernels of the other folders and write to `round2_checks/results/`.
 
