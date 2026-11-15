@@ -71,15 +71,19 @@ def cv_bounds(fam):
     return 0.005, 5.0
 
 def loglik(fam, x, q, delta, m, cv, eps=0.0, span=None):
-    """sum over intervals of log[(1-eps) <f>_q (x) + eps/span]; <.>_q = triangular average over the frame step"""
+    """sum over intervals of log[(1-eps) <f>_q (x) + eps/span]; <.>_q = triangular average over the frame step.
+    The second term is a uniform outlier density on an interval of length span; the caller (fit) chooses that interval
+    so that it contains every interval of the segment, hence no support indicator is needed here."""
     if q > 0: lp = logsumexp(LP[fam](x[:, None] + q * NODES[None, :] - delta, m, cv) + LOGW[None, :], axis=1)
     else: lp = LP[fam](x - delta, m, cv)
     if eps > 0: lp = np.logaddexp(np.log1p(-eps) + lp, np.log(eps / span))
     return float(np.sum(lp))
 
 def fit(fam, x, q, delta, eps=0.0):
-    """maximum likelihood over (m, cv); returns (logL, m, cv)"""
-    y = x - delta; span = 6 * x.mean()
+    """maximum likelihood over (m, cv); returns (logL, m, cv).  eps > 0 adds a uniform outlier component with weight eps
+    on the smallest interval that contains [0, 6 * segment mean] and all intervals of the segment."""
+    y = x - delta
+    span = max(6 * x.mean(), x.max()) - min(0.0, x.min())      # outlier support: smallest interval containing [0, 6 mean] and the data
     good = y[y > 0]; m0 = good.mean() if len(good) else x.mean(); c0 = max(good.std() / m0 if len(good) > 2 else 0.2, 0.03)
     lo, hi = cv_bounds(fam)
     def nll(p):

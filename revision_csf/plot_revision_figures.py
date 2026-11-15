@@ -101,8 +101,8 @@ VAR = [((1, 10000, 30), BLUE, r"$n=1$, $d_H=10^4$ (manuscript)"), ((2, 2000, 30)
 sel = lambda T, k: T[(T.nP == k[0]) & (T.dH == k[1]) & (T.gH == k[2])]
 def p_period(a):
     for k, col, lab in VAR:
-        c = sel(CU, k); c = c[c.Tdet > 0]; s = sel(SM, k).iloc[0]; a.loglog(c.S, c.Tdet, "-", color=col, label=lab + rf": {s.ratio_per_decade:.1f} per decade"); w = c[(c.S >= s.S_lo * 0.999) & (c.S <= s.S_hi * 1.001)]; a.loglog(w.S, w.Tdet, "-", color=TINTS[col], lw=11, zorder=1, solid_capstyle="butt")
-    a.set_xlabel(r"stimulus $\bar S$"); a.set_ylabel("period (model units)"); a.set_title("Period curves; thick: steepest decade"); a.legend(loc="upper right", fontsize=13)
+        c = sel(CU, k); c = c[c.Tdet > 0]; s = sel(SM, k).iloc[0]; a.loglog(c.S, c.Tdet, "-", color=col, label=lab + rf": ratio {s.ratio_per_decade:.2f}"); w = c[(c.S >= s.S_lo * 0.999) & (c.S <= s.S_hi * 1.001)]; a.loglog(w.S, w.Tdet, "-", color=TINTS[col], lw=11, zorder=1, solid_capstyle="butt")
+    a.set_xlabel(r"stimulus $\bar S$"); a.set_ylabel("period (model units)"); a.set_title("Period curves; thick: window of largest ratio"); a.legend(loc="upper right", fontsize=13)
 def p_dose(a):
     doses = np.array([3, 5, 10, 15, 30.0]); med, lo, hi = [], [], []
     for d_ in doses: r = DT[DT.dose == d_].iloc[0]; med.append(r.isi_train_median); lo.append(r.isi_train_ci_lo); hi.append(r.isi_train_ci_hi)
@@ -116,5 +116,5 @@ def p_shape(a):
         c = sel(CU, k); c = c[c.Tdet > 0]; s = sel(SM, k).iloc[0]; w = c[(c.S >= s.S_lo * 0.999) & (c.S <= s.S_hi * 1.001)]
         a.semilogx(w.S, w.W50 / w.W50.iloc[0], "-", color=col, label=lab.split(",")[0] + ", half-width"); a.semilogx(w.S, w.amp / w.amp.iloc[0], "--", color=col, label=lab.split(",")[0] + ", amplitude")
     a.axhline(1.10, color="k", ls=":", lw=2); a.axhline(1.26, color="k", ls="-.", lw=2); a.text(0.07, 1.105, "data: width, 5→30 µM within cells", fontsize=14); a.text(0.07, 1.265, "data: amplitude", fontsize=14)
-    a.set_ylim(0.95, 1.4); a.set_xlabel(r"stimulus $\bar S$ (steepest decade)"); a.set_ylabel("relative to the low end"); a.set_title("Spike shape across the decade"); a.legend(loc="upper left", fontsize=13)
+    a.set_ylim(0.95, 1.4); a.set_xlabel(r"stimulus $\bar S$ (window of largest ratio)"); a.set_ylabel("relative to the low end"); a.set_title("Spike shape across the window"); a.legend(loc="upper left", fontsize=13)
 compose([p_period, p_dose, p_shape], 3, "figR4_dynamic_range")

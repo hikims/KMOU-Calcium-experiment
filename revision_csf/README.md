@@ -21,6 +21,7 @@ compiled kernels: `m1_noiseform_sde` (this folder, `make`) and `../m0_joint_scan
 | `g1_noise_location_sensitivity.py` | three noise locations at six reference settings, eight seeds each | Section 6.1, Table S21 | – |
 | `b1_fpt_density.py` | tables of the reduced first-passage densities (Crank–Nicolson on the backward equation); writes `results/b1_fpt_density_*.pkl` | – | 1 min |
 | `isifam.py`, `b2_family_comparison.py`, `b3_robustness.py` | likelihood comparison of eight interval families on the 196 segments, bootstrap, outlier component, parametric bootstrap, model as data | Section 6.3, Table 8, Tables S22–S28, Fig. S28 | 15 min |
+| `b2c_sensitivity.py` | part C of `b2_family_comparison.py` alone (sensitivity variants, including the outlier component with all intervals retained) | Table S23 | 10 s |
 | `b2e_bootstrap_summary.py` | summary of the parametric bootstrap from its stored replicates; replicates with an infeasible fit are excluded pairwise and counted | Table S27 | 1 s |
 | `b2f_bootstrap_failures.py` | regenerates the bootstrap replicates and checks that the discarded ones are exactly those with an interval below the support of the families with offset | Table S27 | 1 min |
 | `j1_linear_law.py` | slope of the linear variability law for the data, the reduced process and the full model | Table 10 | 1 s |
